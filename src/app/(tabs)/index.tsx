@@ -1,9 +1,3 @@
-import { View, Text } from 'react-native';
+import { HomeScreen } from '@/screens/home';
 
-export default function HomeScreen() {
-  return (
-    <View className="flex-1 items-center justify-center bg-white">
-      <Text className="text-xl font-semibold text-gray-900">Home</Text>
-    </View>
-  );
-}
+export default HomeScreen;
