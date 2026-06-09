@@ -6,6 +6,28 @@ import { clientRequest } from '@/services/client';
 
 type PostsCache = InfiniteData<AxiosResponse<PaginatedResponse<Post>>>;
 
+function applyToggle(old: PostsCache | undefined, postId: string, isLiked: boolean) {
+  if (!old) return old;
+  return {
+    ...old,
+    pages: old.pages.map((page) => ({
+      ...page,
+      data: {
+        ...page.data,
+        data: page.data.data?.map((p) =>
+          p.id === postId
+            ? {
+                ...p,
+                isLikedByCurrentUser: !isLiked,
+                likesCount: isLiked ? p.likesCount - 1 : p.likesCount + 1,
+              }
+            : p,
+        ),
+      },
+    })),
+  };
+}
+
 export function useToggleLike(post: Post) {
   const queryClient = useQueryClient();
   const isLiked = !!post.isLikedByCurrentUser;
@@ -16,36 +38,21 @@ export function useToggleLike(post: Post) {
 
     onMutate: async () => {
       await queryClient.cancelQueries({ queryKey: ['posts'] });
-      const previous = queryClient.getQueryData<PostsCache>(['posts']);
 
-      queryClient.setQueryData<PostsCache>(['posts'], (old) => {
-        if (!old) return old;
-        return {
-          ...old,
-          pages: old.pages.map((page) => ({
-            ...page,
-            data: {
-              ...page.data,
-              data: page.data.data?.map((p) =>
-                p.id === post.id
-                  ? {
-                      ...p,
-                      isLikedByCurrentUser: !isLiked,
-                      likesCount: isLiked ? p.likesCount - 1 : p.likesCount + 1,
-                    }
-                  : p,
-              ),
-            },
-          })),
-        };
-      });
+      // Snapshot every matching cache (feed + all user-post lists)
+      const snapshots = queryClient.getQueriesData<PostsCache>({ queryKey: ['posts'] });
 
-      return { previous };
+      // Apply optimistic update to all of them
+      queryClient.setQueriesData<PostsCache>({ queryKey: ['posts'] }, (old) =>
+        applyToggle(old, post.id, isLiked),
+      );
+
+      return { snapshots };
     },
 
     onError: (_err, _vars, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(['posts'], context.previous);
+      for (const [key, data] of context?.snapshots ?? []) {
+        queryClient.setQueryData(key, data);
       }
     },
   });

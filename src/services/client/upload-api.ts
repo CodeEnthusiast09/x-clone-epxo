@@ -7,4 +7,10 @@ const requestGateway = clientRequestGateway();
 export const uploadClientRequests = {
   getPostSignature: () =>
     requestGateway.post<ApiResponse<UploadSignature>>({ url: 'api/upload-signatures/posts' }),
+
+  getBannerSignature: () =>
+    requestGateway.post<ApiResponse<UploadSignature>>({ url: 'api/upload-signatures/banners' }),
+
+  getAvatarSignature: () =>
+    requestGateway.post<ApiResponse<UploadSignature>>({ url: 'api/upload-signatures/avatars' }),
 };
