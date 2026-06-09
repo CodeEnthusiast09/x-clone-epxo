@@ -50,6 +50,12 @@
           "color": "#ffffff",
           "defaultChannel": "default"
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow X to access your photos to attach images to posts."
+        }
       ]
     ]
   }

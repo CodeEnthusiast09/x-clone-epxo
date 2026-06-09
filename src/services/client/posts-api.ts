@@ -10,10 +10,10 @@ export const postsClientRequests = {
       url: `api/posts?page=${page}&limit=${limit}`,
     }),
 
-  create: (content: string) =>
+  create: (content: string, image?: string) =>
     requestGateway.post<ApiResponse<Post>>({
       url: 'api/posts',
-      payload: { content },
+      payload: { content, ...(image ? { image } : {}) },
     }),
 
   like: (postId: string) =>

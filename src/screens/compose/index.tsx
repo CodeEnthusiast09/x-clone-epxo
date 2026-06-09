@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -11,7 +12,10 @@ import {
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
 import { useCreatePost } from '@/hooks/services/posts/useCreatePost';
+import { clientRequest } from '@/services/client';
+import { uploadToCloudinary } from '@/utils/cloudinary-upload';
 import { useAppStore } from '@/store/auth-store';
 
 const MAX_CHARS = 280;
@@ -20,16 +24,57 @@ export function ComposeScreen() {
   const router = useRouter();
   const currentUser = useAppStore((s) => s.currentUser);
   const [content, setContent] = useState('');
+  const [localImageUri, setLocalImageUri] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const createPost = useCreatePost();
 
   const remaining = MAX_CHARS - content.length;
-  const canPost = content.trim().length > 0 && remaining >= 0 && !createPost.isPending;
+  const isPosting = createPost.isPending || uploading;
+  const canPost =
+    (content.trim().length > 0 || !!localImageUri) && remaining >= 0 && !isPosting;
 
-  const handlePost = () => {
-    if (!canPost) return;
-    createPost.mutate(content.trim(), {
-      onSuccess: () => router.back(),
+  const handlePickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission required', 'Allow access to your photo library to attach images.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.8,
     });
+
+    if (!result.canceled && result.assets[0]) {
+      setLocalImageUri(result.assets[0].uri);
+    }
+  };
+
+  const handlePost = async () => {
+    if (!canPost) return;
+    setUploading(true);
+
+    try {
+      let imageUrl: string | undefined;
+
+      if (localImageUri) {
+        const sigRes = await clientRequest.upload.getPostSignature();
+        const sig = sigRes.data.data;
+        if (!sig) throw new Error('Failed to get upload signature');
+        imageUrl = await uploadToCloudinary(localImageUri, sig);
+      }
+
+      createPost.mutate(
+        { content: content.trim(), image: imageUrl },
+        { onSuccess: () => router.back() },
+      );
+    } catch {
+      Alert.alert('Upload failed', 'Could not upload image. Please try again.');
+    } finally {
+      setUploading(false);
+    }
   };
 
   const initials = currentUser
@@ -44,11 +89,11 @@ export function ComposeScreen() {
           <Text className="text-base text-gray-500">Cancel</Text>
         </Pressable>
         <Pressable
-          onPress={handlePost}
+          onPress={() => void handlePost()}
           disabled={!canPost}
           className={`rounded-full bg-blue-500 px-5 py-1.5 ${!canPost ? 'opacity-40' : ''}`}
         >
-          {createPost.isPending ? (
+          {isPosting ? (
             <ActivityIndicator size="small" color="#fff" />
           ) : (
             <Text className="text-sm font-bold text-white">Post</Text>
@@ -73,7 +118,7 @@ export function ComposeScreen() {
             </View>
           )}
 
-          {/* Input */}
+          {/* Input + image preview */}
           <View className="flex-1">
             <TextInput
               className="text-base text-black"
@@ -85,11 +130,37 @@ export function ComposeScreen() {
               autoFocus
               maxLength={MAX_CHARS + 1}
             />
+
+            {!!localImageUri && (
+              <View className="relative mt-3">
+                <Image
+                  source={{ uri: localImageUri }}
+                  className="h-48 w-full rounded-2xl bg-gray-100"
+                  resizeMode="cover"
+                />
+                <Pressable
+                  className="absolute right-2 top-2 h-7 w-7 items-center justify-center rounded-full bg-black/60"
+                  onPress={() => setLocalImageUri(null)}
+                  hitSlop={8}
+                >
+                  <Text className="text-xs font-bold text-white">✕</Text>
+                </Pressable>
+              </View>
+            )}
           </View>
         </View>
 
-        {/* Char counter */}
-        <View className="flex-row justify-end border-t border-gray-100 px-4 py-2">
+        {/* Toolbar + char counter */}
+        <View className="flex-row items-center justify-between border-t border-gray-100 px-4 py-2">
+          <Pressable
+            onPress={() => void handlePickImage()}
+            disabled={isPosting}
+            hitSlop={8}
+            className="disabled:opacity-40"
+          >
+            <Text className="text-xl">🖼️</Text>
+          </Pressable>
+
           <Text
             className={`text-sm ${
               remaining < 0
