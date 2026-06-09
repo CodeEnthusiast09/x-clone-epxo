@@ -9,6 +9,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import type { Post } from '@/interfaces/post.interface';
 import type { User } from '@/interfaces/user.interface';
 import { PostCard } from '@/components/post-card';
@@ -27,11 +28,15 @@ const TABS: { key: SearchTab; label: string }[] = [
 type SearchEntry = { type: 'user'; item: User } | { type: 'post'; item: Post };
 
 function UserRow({ user }: { user: User }) {
+  const router = useRouter();
   const displayName = `${user.firstName} ${user.lastName}`.trim() || user.username;
   const initials = `${user.firstName[0] ?? ''}${user.lastName[0] ?? ''}`.toUpperCase();
 
   return (
-    <View className="flex-row items-center gap-3 border-b border-gray-100 px-4 py-3">
+    <Pressable
+      className="flex-row items-center gap-3 border-b border-gray-100 px-4 py-3"
+      onPress={() => router.push(`/profile/${user.username}`)}
+    >
       {user.profilePicture ? (
         <Image
           source={{ uri: user.profilePicture }}
@@ -51,7 +56,7 @@ function UserRow({ user }: { user: User }) {
           </Text>
         )}
       </View>
-    </View>
+    </Pressable>
   );
 }
 

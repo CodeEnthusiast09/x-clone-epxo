@@ -1,4 +1,5 @@
-import { useSignUp } from '@clerk/clerk-expo';
+import { useSignUp, useSSO } from '@clerk/clerk-expo';
+import * as WebBrowser from 'expo-web-browser';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
@@ -12,11 +13,14 @@ import {
 } from 'react-native';
 import { useSync } from '@/hooks/services';
 
+WebBrowser.maybeCompleteAuthSession();
+
 type Step = 'form' | 'verify';
 
 export function SignUpScreen() {
   const router = useRouter();
   const { signUp, setActive, isLoaded } = useSignUp();
+  const { startSSOFlow } = useSSO();
   const syncMutation = useSync();
 
   const [step, setStep] = useState<Step>('form');
@@ -26,6 +30,10 @@ export function SignUpScreen() {
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const afterAuth = () => {
+    syncMutation.mutate();
+  };
 
   const handleSignUp = async () => {
     if (!isLoaded) return;
@@ -58,7 +66,7 @@ export function SignUpScreen() {
       const result = await signUp.attemptEmailAddressVerification({ code });
       if (result.status === 'complete') {
         await setActive({ session: result.createdSessionId });
-        syncMutation.mutate();
+        afterAuth();
       } else {
         setError('Verification incomplete. Please try again.');
       }
@@ -68,6 +76,22 @@ export function SignUpScreen() {
       setError(msg);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleOAuth = async (strategy: 'oauth_google' | 'oauth_apple') => {
+    setError('');
+    try {
+      const { createdSessionId, setActive: setOAuthActive } = await startSSOFlow({ strategy });
+      if (createdSessionId && setOAuthActive) {
+        await setOAuthActive({ session: createdSessionId });
+        afterAuth();
+      }
+    } catch (err: unknown) {
+      const provider = strategy === 'oauth_google' ? 'Google' : 'Apple';
+      const msg =
+        err instanceof Error ? err.message : `${provider} sign up failed. Please try again.`;
+      setError(msg);
     }
   };
 
@@ -160,7 +184,7 @@ export function SignUpScreen() {
         </View>
 
         <Pressable
-          className="mb-6 h-12 items-center justify-center rounded-full bg-black disabled:opacity-50"
+          className="mb-4 h-12 items-center justify-center rounded-full bg-black disabled:opacity-50"
           onPress={handleSignUp}
           disabled={loading || !email || !password || !confirmPassword}
         >
@@ -170,6 +194,28 @@ export function SignUpScreen() {
             <Text className="text-base font-bold text-white">Create account</Text>
           )}
         </Pressable>
+
+        <View className="mb-4 flex-row items-center gap-3">
+          <View className="h-px flex-1 bg-gray-200" />
+          <Text className="text-sm text-gray-400">or</Text>
+          <View className="h-px flex-1 bg-gray-200" />
+        </View>
+
+        <View className="mb-6 gap-3">
+          <Pressable
+            className="h-12 flex-row items-center justify-center gap-2 rounded-full border border-gray-300"
+            onPress={() => handleOAuth('oauth_google')}
+          >
+            <Text className="text-base font-semibold text-black">Continue with Google</Text>
+          </Pressable>
+
+          <Pressable
+            className="h-12 flex-row items-center justify-center gap-2 rounded-full bg-black"
+            onPress={() => handleOAuth('oauth_apple')}
+          >
+            <Text className="text-base font-semibold text-white"> Continue with Apple</Text>
+          </Pressable>
+        </View>
 
         <View className="flex-row justify-center gap-1">
           <Text className="text-sm text-gray-500">Already have an account?</Text>
