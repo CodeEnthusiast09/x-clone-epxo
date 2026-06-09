@@ -17,5 +17,5 @@ export const notificationsClientRequests = {
     requestGateway.post<ApiResponse<null>>({ url: 'api/push-token', payload: { token } }),
 
   unregisterPushToken: (token: string) =>
-    requestGateway.delete<ApiResponse<null>>({ url: `api/push-token?token=${encodeURIComponent(token)}` }),
+    requestGateway.delete<ApiResponse<null>>({ url: 'api/push-token', config: { data: { token } } }),
 };
