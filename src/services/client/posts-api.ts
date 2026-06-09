@@ -21,4 +21,9 @@ export const postsClientRequests = {
 
   unlike: (postId: string) =>
     requestGateway.delete({ url: `api/posts/${postId}/likes` }),
+
+  listByUsername: (username: string, page = 1, limit = 20) =>
+    requestGateway.get<PaginatedResponse<Post>>({
+      url: `api/users/${username}/posts?page=${page}&limit=${limit}`,
+    }),
 };

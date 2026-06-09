@@ -1,36 +1,19 @@
-import { useAuth } from '@clerk/clerk-expo';
-import { View, Text, Pressable } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useEffect } from 'react';
 import { useAppStore } from '@/store/auth-store';
+import { ProfileScreen } from '@/screens/profile';
 
 export default function ProfileTab() {
-  const { signOut } = useAuth();
+  const router = useRouter();
   const currentUser = useAppStore((s) => s.currentUser);
-  const setCurrentUser = useAppStore((s) => s.setCurrentUser);
 
-  const handleSignOut = async () => {
-    setCurrentUser(null);
-    await signOut();
-  };
+  useEffect(() => {
+    if (!currentUser) {
+      router.replace('/(auth)/sign-in');
+    }
+  }, [currentUser, router]);
 
-  return (
-    <View className="flex-1 bg-white px-4 pt-12">
-      {currentUser ? (
-        <>
-          <Text className="text-xl font-bold text-black">
-            {currentUser.firstName} {currentUser.lastName}
-          </Text>
-          <Text className="mt-1 text-sm text-gray-500">@{currentUser.username}</Text>
-        </>
-      ) : (
-        <Text className="text-base text-gray-400">Profile coming soon</Text>
-      )}
+  if (!currentUser) return null;
 
-      <Pressable
-        className="mt-6 h-10 w-28 items-center justify-center rounded-full border border-gray-300"
-        onPress={handleSignOut}
-      >
-        <Text className="text-sm font-semibold text-black">Sign out</Text>
-      </Pressable>
-    </View>
-  );
+  return <ProfileScreen username={currentUser.username} />;
 }

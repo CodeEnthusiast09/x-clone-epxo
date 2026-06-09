@@ -9,6 +9,9 @@ export interface User {
   bannerImage: string;
   bio: string;
   location: string;
+  followersCount?: number;
+  followingCount?: number;
+  isFollowedByCurrentUser?: boolean;
   followers?: User[];
   following?: User[];
   createdAt: string;

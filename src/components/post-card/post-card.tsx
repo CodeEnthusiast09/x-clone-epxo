@@ -1,4 +1,5 @@
 import { Image, Pressable, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import type { Post } from '@/interfaces/post.interface';
 import { useToggleLike } from '@/hooks/services/posts/useToggleLike';
 import { formatRelativeTime } from '@/utils/format-date';
@@ -27,20 +28,27 @@ function Avatar({ user }: { user: Post['user'] }) {
 }
 
 export function PostCard({ post }: Props) {
+  const router = useRouter();
   const displayName = `${post.user.firstName} ${post.user.lastName}`.trim() || post.user.username;
   const toggleLike = useToggleLike(post);
   const isLiked = !!post.isLikedByCurrentUser;
 
+  const goToProfile = () => router.push(`/profile/${post.user.username}`);
+
   return (
     <View className="border-b border-gray-100 px-4 py-3">
       <View className="flex-row gap-3">
-        <Avatar user={post.user} />
+        <Pressable onPress={goToProfile}>
+          <Avatar user={post.user} />
+        </Pressable>
 
         <View className="flex-1">
           <View className="flex-row items-center gap-1">
-            <Text className="text-sm font-bold text-black" numberOfLines={1}>
-              {displayName}
-            </Text>
+            <Pressable onPress={goToProfile}>
+              <Text className="text-sm font-bold text-black" numberOfLines={1}>
+                {displayName}
+              </Text>
+            </Pressable>
             <Text className="text-sm text-gray-500" numberOfLines={1}>
               @{post.user.username}
             </Text>
