@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { CLERK_PUBLISHABLE_KEY } from '@/constants';
+import { usePushNotifications } from '@/hooks/common/usePushNotifications';
 import { queryClient } from '@/lib/query-client';
 import { tokenCache } from '@/lib/token-cache';
 import { setTokenGetter } from '@/services/client/client-request-gateway';
@@ -31,6 +32,8 @@ function AuthGuard() {
       router.replace('/(tabs)');
     }
   }, [isLoaded, isSignedIn, segments, router]);
+
+  usePushNotifications(!!isSignedIn);
 
   return <Slot />;
 }

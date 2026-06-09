@@ -7,6 +7,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import * as Notifications from 'expo-notifications';
 import { useNotifications, useMarkAllRead } from '@/hooks/services/notifications';
 import { formatRelativeTime } from '@/utils/format-date';
 import type { Notification } from '@/interfaces/notification.interface';
@@ -82,6 +83,7 @@ export function NotificationsScreen() {
 
   useEffect(() => {
     markAllRead.mutate();
+    Notifications.setBadgeCountAsync(0).catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

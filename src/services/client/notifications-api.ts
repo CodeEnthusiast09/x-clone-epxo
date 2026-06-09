@@ -12,4 +12,10 @@ export const notificationsClientRequests = {
 
   markAllRead: () =>
     requestGateway.patch<ApiResponse<null>>({ url: 'api/notifications/read', payload: {} }),
+
+  registerPushToken: (token: string) =>
+    requestGateway.post<ApiResponse<null>>({ url: 'api/push-token', payload: { token } }),
+
+  unregisterPushToken: (token: string) =>
+    requestGateway.delete<ApiResponse<null>>({ url: `api/push-token?token=${encodeURIComponent(token)}` }),
 };
