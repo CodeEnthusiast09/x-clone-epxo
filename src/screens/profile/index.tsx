@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { format } from 'date-fns';
 import { PostCard } from '@/components/post-card';
 import { useProfile, useToggleFollow } from '@/hooks/services/users';
 import { useUserPosts } from '@/hooks/services/posts';
@@ -84,6 +85,9 @@ function ProfileHeader({ user, isOwnProfile }: { user: User; isOwnProfile: boole
         {!!user.location && (
           <Text className="mt-1 text-sm text-gray-500">📍 {user.location}</Text>
         )}
+        <Text className="mt-1 text-sm text-gray-500">
+          🗓️ Joined {format(new Date(user.createdAt), 'MMMM yyyy')}
+        </Text>
 
         {/* Followers / Following */}
         <View className="mt-3 flex-row gap-4">
