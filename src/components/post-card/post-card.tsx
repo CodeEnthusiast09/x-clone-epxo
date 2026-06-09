@@ -27,8 +27,8 @@ function Avatar({ user }: { user: Post['user'] }) {
 
 export function PostCard({ post }: Props) {
   const displayName = `${post.user.firstName} ${post.user.lastName}`.trim() || post.user.username;
-  const likeCount = post.likes?.length ?? 0;
-  const commentCount = post.comments?.length ?? 0;
+  const likeCount = post.likesCount;
+  const commentCount = post.commentsCount;
 
   return (
     <View className="border-b border-gray-100 px-4 py-3">

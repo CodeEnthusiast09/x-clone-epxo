@@ -6,6 +6,8 @@ export interface Post {
   user: User;
   content: string;
   image: string;
+  likesCount: number;
+  commentsCount: number;
   likes?: User[];
   comments?: Comment[];
   createdAt: string;
