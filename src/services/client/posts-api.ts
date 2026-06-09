@@ -26,4 +26,7 @@ export const postsClientRequests = {
     requestGateway.get<PaginatedResponse<Post>>({
       url: `api/users/${username}/posts?page=${page}&limit=${limit}`,
     }),
+
+  deletePost: (postId: string) =>
+    requestGateway.delete<ApiResponse<null>>({ url: `api/posts/${postId}` }),
 };

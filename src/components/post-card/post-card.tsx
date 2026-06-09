@@ -1,7 +1,11 @@
-import { Image, Pressable, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Alert, Image, Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import type { Post } from '@/interfaces/post.interface';
 import { useToggleLike } from '@/hooks/services/posts/useToggleLike';
+import { useDeletePost } from '@/hooks/services/posts/useDeletePost';
+import { useAppStore } from '@/store/auth-store';
+import { CommentsModal } from '@/components/comments-modal';
 import { formatRelativeTime } from '@/utils/format-date';
 
 interface Props {
@@ -29,11 +33,26 @@ function Avatar({ user }: { user: Post['user'] }) {
 
 export function PostCard({ post }: Props) {
   const router = useRouter();
+  const currentUser = useAppStore((s) => s.currentUser);
   const displayName = `${post.user.firstName} ${post.user.lastName}`.trim() || post.user.username;
   const toggleLike = useToggleLike(post);
+  const deletePost = useDeletePost();
   const isLiked = !!post.isLikedByCurrentUser;
+  const isOwn = currentUser?.id === post.userId;
+  const [commentsOpen, setCommentsOpen] = useState(false);
 
   const goToProfile = () => router.push(`/profile/${post.user.username}`);
+
+  const handleDelete = () => {
+    Alert.alert('Delete post', 'This cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => deletePost.mutate(post.id),
+      },
+    ]);
+  };
 
   return (
     <View className="border-b border-gray-100 px-4 py-3">
@@ -43,19 +62,27 @@ export function PostCard({ post }: Props) {
         </Pressable>
 
         <View className="flex-1">
-          <View className="flex-row items-center gap-1">
-            <Pressable onPress={goToProfile}>
-              <Text className="text-sm font-bold text-black" numberOfLines={1}>
-                {displayName}
+          <View className="flex-row items-center justify-between">
+            <View className="flex-row items-center gap-1 flex-1">
+              <Pressable onPress={goToProfile}>
+                <Text className="text-sm font-bold text-black" numberOfLines={1}>
+                  {displayName}
+                </Text>
+              </Pressable>
+              <Text className="text-sm text-gray-500" numberOfLines={1}>
+                @{post.user.username}
               </Text>
-            </Pressable>
-            <Text className="text-sm text-gray-500" numberOfLines={1}>
-              @{post.user.username}
-            </Text>
-            <Text className="text-sm text-gray-500">·</Text>
-            <Text className="text-sm text-gray-500">
-              {formatRelativeTime(post.createdAt)}
-            </Text>
+              <Text className="text-sm text-gray-500">·</Text>
+              <Text className="text-sm text-gray-500">
+                {formatRelativeTime(post.createdAt)}
+              </Text>
+            </View>
+
+            {isOwn && (
+              <Pressable onPress={handleDelete} hitSlop={8} disabled={deletePost.isPending}>
+                <Text className="text-base text-gray-400">🗑️</Text>
+              </Pressable>
+            )}
           </View>
 
           {!!post.content && (
@@ -71,10 +98,13 @@ export function PostCard({ post }: Props) {
           )}
 
           <View className="mt-3 flex-row gap-6">
-            <View className="flex-row items-center gap-1.5">
+            <Pressable
+              className="flex-row items-center gap-1.5"
+              onPress={() => setCommentsOpen(true)}
+            >
               <Text className="text-xs text-gray-500">💬</Text>
               <Text className="text-xs text-gray-500">{post.commentsCount}</Text>
-            </View>
+            </Pressable>
             <View className="flex-row items-center gap-1.5">
               <Text className="text-xs text-gray-500">🔁</Text>
               <Text className="text-xs text-gray-500">0</Text>
@@ -92,6 +122,12 @@ export function PostCard({ post }: Props) {
           </View>
         </View>
       </View>
+
+      <CommentsModal
+        post={post}
+        visible={commentsOpen}
+        onClose={() => setCommentsOpen(false)}
+      />
     </View>
   );
 }
