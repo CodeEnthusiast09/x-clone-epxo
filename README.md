@@ -10,7 +10,7 @@ A full-featured mobile rebuild of [burakorkmez/x-clone-rn](https://github.com/bu
 |---|---|---|
 | Framework | Expo | ~54.0.35 |
 | Routing | Expo Router | ~6.0.24 |
-| Auth | @clerk/clerk-expo | 2.19.31 |
+| Auth | @clerk/clerk-expo | ^2.14.0 |
 | Styling | NativeWind + Tailwind CSS | ^4 + ^3.4 |
 | Server state | TanStack Query | ^5.101.0 |
 | Global state | Zustand | ^5.0.14 |
@@ -76,6 +76,19 @@ npx expo install <package-name>
 
 Never use `yarn add` for Expo packages. `npx expo install` resolves the version that matches your SDK before handing off to yarn. Using `yarn add` directly pulls whatever is latest on npm, which may be built for a newer SDK.
 
+### Expo Go — push notification APIs are removed
+
+`expo-notifications` push APIs (`setNotificationHandler`, `getExpoPushTokenAsync`, `setNotificationChannelAsync`) were removed from Expo Go in SDK 53. They work only in development builds or standalone apps. All notification call sites are guarded by:
+
+```ts
+const isExpoGo = Constants.appOwnership === 'expo';
+if (!isExpoGo) { /* push API calls */ }
+```
+
+The in-app notification list and mark-all-read still work in Expo Go — only the device push token registration and badge reset are skipped.
+
+---
+
 ### What went wrong with `expo-notifications`
 
 When `expo-notifications` was first installed with `yarn add`, it resolved to `0.34.x` (SDK 56). The `PermissionResponse` type in that version dropped the `status: string` field in favour of a `granted: boolean`. Since `expo@54` was still exporting the old type shape, TypeScript failed on the permission check:
@@ -123,7 +136,8 @@ src/
 │   ├── profile/[username].tsx  ← dynamic profile route
 │   ├── chat/[conversationId].tsx
 │   ├── compose.tsx
-│   └── edit-profile.tsx
+│   ├── edit-profile.tsx
+│   └── sso-callback.tsx        ← OAuth redirect handler — closes browser, hands control back to startSSOFlow
 ├── screens/                    ← real screen UI (all logic lives here)
 │   ├── home/
 │   ├── search/
@@ -137,7 +151,8 @@ src/
 │   └── sign-up/
 ├── components/
 │   ├── post-card/              ← PostCard with like, comments modal, delete
-│   └── comments-modal/        ← full-screen comments sheet
+│   ├── comments-modal/        ← full-screen comments sheet
+│   └── toast/                 ← animated slide-in error toast (absolute positioned, no layout impact)
 ├── hooks/
 │   ├── common/
 │   │   ├── useDebounce.ts

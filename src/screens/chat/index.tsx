@@ -5,11 +5,11 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  SafeAreaView,
   Text,
   TextInput,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import type { Message } from '@/interfaces/conversation.interface';
 import { useConversationWS } from '@/hooks/common/useConversationWS';

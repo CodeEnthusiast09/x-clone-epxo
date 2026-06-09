@@ -7,6 +7,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { format } from 'date-fns';
 import { PostCard } from '@/components/post-card';
@@ -131,22 +132,22 @@ export function ProfileScreen({ username }: Props) {
 
   if (profileLoading) {
     return (
-      <View className="flex-1 items-center justify-center bg-white">
+      <SafeAreaView edges={['top']} className="flex-1 items-center justify-center bg-white">
         <ActivityIndicator size="large" color="#000" />
-      </View>
+      </SafeAreaView>
     );
   }
 
   if (profileError || !profileData) {
     return (
-      <View className="flex-1 items-center justify-center bg-white px-8">
+      <SafeAreaView edges={['top']} className="flex-1 items-center justify-center bg-white px-8">
         <Text className="text-center text-base text-gray-500">User not found.</Text>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View className="flex-1 bg-white">
+    <SafeAreaView edges={['top']} className="flex-1 bg-white">
       <FlatList
         data={posts}
         keyExtractor={(item) => item.id}
@@ -178,6 +179,6 @@ export function ProfileScreen({ username }: Props) {
           ) : null
         }
       />
-    </View>
+    </SafeAreaView>
   );
 }

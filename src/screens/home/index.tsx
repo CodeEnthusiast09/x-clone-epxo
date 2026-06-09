@@ -1,4 +1,5 @@
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { PostCard } from '@/components/post-card';
 import { usePosts } from '@/hooks/services';
@@ -21,24 +22,24 @@ export function HomeScreen() {
 
   if (isLoading) {
     return (
-      <View className="flex-1 items-center justify-center bg-white">
+      <SafeAreaView edges={['top']} className="flex-1 items-center justify-center bg-white">
         <ActivityIndicator size="large" color="#000" />
-      </View>
+      </SafeAreaView>
     );
   }
 
   if (isError) {
     return (
-      <View className="flex-1 items-center justify-center bg-white px-8">
+      <SafeAreaView edges={['top']} className="flex-1 items-center justify-center bg-white px-8">
         <Text className="text-center text-base text-gray-500">
           Something went wrong. Pull to refresh.
         </Text>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View className="flex-1 bg-white">
+    <SafeAreaView edges={['top']} className="flex-1 bg-white">
       <FlatList
         className="flex-1"
         data={posts}
@@ -72,6 +73,6 @@ export function HomeScreen() {
       >
         <Text className="text-2xl font-bold text-white">+</Text>
       </Pressable>
-    </View>
+    </SafeAreaView>
   );
 }

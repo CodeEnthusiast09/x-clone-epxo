@@ -1135,14 +1135,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@clerk/clerk-expo@npm:2.19.31":
-  version: 2.19.31
-  resolution: "@clerk/clerk-expo@npm:2.19.31"
+"@clerk/clerk-expo@npm:^2.14.0":
+  version: 2.19.39
+  resolution: "@clerk/clerk-expo@npm:2.19.39"
   dependencies:
-    "@clerk/clerk-js": "npm:^5.125.5"
-    "@clerk/clerk-react": "npm:^5.61.3"
-    "@clerk/shared": "npm:^3.47.2"
-    "@clerk/types": "npm:^4.101.20"
+    "@clerk/clerk-js": "npm:^5.125.13"
+    "@clerk/clerk-react": "npm:^5.61.8"
+    "@clerk/shared": "npm:^3.47.7"
+    "@clerk/types": "npm:^4.101.25"
     base-64: "npm:^1.0.0"
     react-native-url-polyfill: "npm:2.0.0"
     tslib: "npm:2.8.1"
@@ -1168,11 +1168,11 @@ __metadata:
       optional: true
     expo-secure-store:
       optional: true
-  checksum: 10c0/9232eb562dc872131f27cf0e3176bfceddf8a1908878f23a39678b87c153b0c32bb5addae3b5ca270b3a4c93d37782d7716ec5b4f7321b15c82dadb962dc21a1
+  checksum: 10c0/ba5a1cc737eb19eea11e78814d24c297c600a9482bdeaa876232ba1e835329fab71bcc4b8db0d737e4d7332cdf50b4596fae892f0b786cd1920d4b692a3c4919
   languageName: node
   linkType: hard
 
-"@clerk/clerk-js@npm:^5.125.5":
+"@clerk/clerk-js@npm:^5.125.13":
   version: 5.125.13
   resolution: "@clerk/clerk-js@npm:5.125.13"
   dependencies:
@@ -1210,7 +1210,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@clerk/clerk-react@npm:^5.61.3":
+"@clerk/clerk-react@npm:^5.61.8":
   version: 5.61.8
   resolution: "@clerk/clerk-react@npm:5.61.8"
   dependencies:
@@ -1232,7 +1232,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@clerk/shared@npm:^3.47.2, @clerk/shared@npm:^3.47.7":
+"@clerk/shared@npm:^3.47.7":
   version: 3.47.7
   resolution: "@clerk/shared@npm:3.47.7"
   dependencies:
@@ -1254,7 +1254,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@clerk/types@npm:^4.101.20, @clerk/types@npm:^4.101.25":
+"@clerk/types@npm:^4.101.25":
   version: 4.101.25
   resolution: "@clerk/types@npm:4.101.25"
   dependencies:
@@ -10332,7 +10332,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "x-clone-expo@workspace:."
   dependencies:
-    "@clerk/clerk-expo": "npm:2.19.31"
+    "@clerk/clerk-expo": "npm:^2.14.0"
     "@tanstack/react-query": "npm:^5.101.0"
     "@types/react": "npm:~19.1.0"
     axios: "npm:^1.17.0"

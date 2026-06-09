@@ -5,11 +5,11 @@ import {
   Image,
   Modal,
   Pressable,
-  SafeAreaView,
   Text,
   TextInput,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import type { ConversationView } from '@/interfaces/conversation.interface';
 import type { User } from '@/interfaces/user.interface';

@@ -7,8 +7,11 @@ import {
   Text,
   View,
 } from 'react-native';
-import * as Notifications from 'expo-notifications';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import Constants from 'expo-constants';
 import { useNotifications, useMarkAllRead } from '@/hooks/services/notifications';
+
+const isExpoGo = Constants.appOwnership === 'expo';
 import { formatRelativeTime } from '@/utils/format-date';
 import type { Notification } from '@/interfaces/notification.interface';
 
@@ -83,7 +86,11 @@ export function NotificationsScreen() {
 
   useEffect(() => {
     markAllRead.mutate();
-    Notifications.setBadgeCountAsync(0).catch(() => {});
+    if (!isExpoGo) {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const Notifs = require('expo-notifications') as typeof import('expo-notifications');
+      Notifs.setBadgeCountAsync(0).catch(() => {});
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -91,24 +98,24 @@ export function NotificationsScreen() {
 
   if (isLoading) {
     return (
-      <View className="flex-1 items-center justify-center bg-white">
+      <SafeAreaView edges={['top']} className="flex-1 items-center justify-center bg-white">
         <ActivityIndicator size="large" color="#000" />
-      </View>
+      </SafeAreaView>
     );
   }
 
   if (isError) {
     return (
-      <View className="flex-1 items-center justify-center bg-white px-8">
+      <SafeAreaView edges={['top']} className="flex-1 items-center justify-center bg-white px-8">
         <Text className="text-center text-base text-gray-500">
           Something went wrong. Pull to refresh.
         </Text>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View className="flex-1 bg-white">
+    <SafeAreaView edges={['top']} className="flex-1 bg-white">
       <FlatList
         data={items}
         keyExtractor={(item) => item.id}
@@ -132,6 +139,6 @@ export function NotificationsScreen() {
           ) : null
         }
       />
-    </View>
+    </SafeAreaView>
   );
 }
