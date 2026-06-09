@@ -8,6 +8,7 @@ export interface Post {
   image: string;
   likesCount: number;
   commentsCount: number;
+  isLikedByCurrentUser?: boolean;
   likes?: User[];
   comments?: Comment[];
   createdAt: string;

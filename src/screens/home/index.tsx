@@ -1,9 +1,11 @@
-import { ActivityIndicator, FlatList, RefreshControl, Text, View } from 'react-native';
-import { usePosts } from '@/hooks/services';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { PostCard } from '@/components/post-card';
+import { usePosts } from '@/hooks/services';
 import type { Post } from '@/interfaces/post.interface';
 
 export function HomeScreen() {
+  const router = useRouter();
   const {
     data,
     isLoading,
@@ -36,32 +38,40 @@ export function HomeScreen() {
   }
 
   return (
-    <FlatList
-      className="flex-1 bg-white"
-      data={posts}
-      keyExtractor={(item) => item.id}
-      renderItem={({ item }) => <PostCard post={item} />}
-      refreshControl={
-        <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
-      }
-      onEndReached={() => {
-        if (hasNextPage && !isFetchingNextPage) fetchNextPage();
-      }}
-      onEndReachedThreshold={0.4}
-      ListEmptyComponent={
-        <View className="items-center px-8 pt-20">
-          <Text className="text-center text-base text-gray-400">
-            No posts yet. Be the first to post!
-          </Text>
-        </View>
-      }
-      ListFooterComponent={
-        isFetchingNextPage ? (
-          <View className="py-4">
-            <ActivityIndicator size="small" color="#000" />
+    <View className="flex-1 bg-white">
+      <FlatList
+        className="flex-1"
+        data={posts}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => <PostCard post={item} />}
+        refreshControl={
+          <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
+        }
+        onEndReached={() => {
+          if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+        }}
+        onEndReachedThreshold={0.4}
+        ListEmptyComponent={
+          <View className="items-center px-8 pt-20">
+            <Text className="text-center text-base text-gray-400">
+              No posts yet. Be the first to post!
+            </Text>
           </View>
-        ) : null
-      }
-    />
+        }
+        ListFooterComponent={
+          isFetchingNextPage ? (
+            <View className="py-4">
+              <ActivityIndicator size="small" color="#000" />
+            </View>
+          ) : null
+        }
+      />
+      <Pressable
+        className="absolute bottom-6 right-6 h-14 w-14 items-center justify-center rounded-full bg-blue-500"
+        onPress={() => router.push('/compose')}
+      >
+        <Text className="text-2xl font-bold text-white">+</Text>
+      </Pressable>
+    </View>
   );
 }

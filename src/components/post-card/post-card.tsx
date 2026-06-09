@@ -1,5 +1,6 @@
-import { Image, Text, View } from 'react-native';
+import { Image, Pressable, Text, View } from 'react-native';
 import type { Post } from '@/interfaces/post.interface';
+import { useToggleLike } from '@/hooks/services/posts/useToggleLike';
 import { formatRelativeTime } from '@/utils/format-date';
 
 interface Props {
@@ -27,8 +28,8 @@ function Avatar({ user }: { user: Post['user'] }) {
 
 export function PostCard({ post }: Props) {
   const displayName = `${post.user.firstName} ${post.user.lastName}`.trim() || post.user.username;
-  const likeCount = post.likesCount;
-  const commentCount = post.commentsCount;
+  const toggleLike = useToggleLike(post);
+  const isLiked = !!post.isLikedByCurrentUser;
 
   return (
     <View className="border-b border-gray-100 px-4 py-3">
@@ -64,16 +65,22 @@ export function PostCard({ post }: Props) {
           <View className="mt-3 flex-row gap-6">
             <View className="flex-row items-center gap-1.5">
               <Text className="text-xs text-gray-500">💬</Text>
-              <Text className="text-xs text-gray-500">{commentCount}</Text>
+              <Text className="text-xs text-gray-500">{post.commentsCount}</Text>
             </View>
             <View className="flex-row items-center gap-1.5">
               <Text className="text-xs text-gray-500">🔁</Text>
               <Text className="text-xs text-gray-500">0</Text>
             </View>
-            <View className="flex-row items-center gap-1.5">
-              <Text className="text-xs text-gray-500">🤍</Text>
-              <Text className="text-xs text-gray-500">{likeCount}</Text>
-            </View>
+            <Pressable
+              className="flex-row items-center gap-1.5"
+              onPress={() => toggleLike.mutate()}
+              disabled={toggleLike.isPending}
+            >
+              <Text className="text-xs">{isLiked ? '❤️' : '🤍'}</Text>
+              <Text className={`text-xs ${isLiked ? 'text-red-500' : 'text-gray-500'}`}>
+                {post.likesCount}
+              </Text>
+            </Pressable>
           </View>
         </View>
       </View>
