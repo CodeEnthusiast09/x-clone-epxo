@@ -34,7 +34,9 @@ export function useConversationWS(conversationId: string) {
         const token = await getToken();
         if (!mounted || !token) return;
 
-        const url = `${toWsUrl(API_URL)}/api/conversations/${conversationId}/ws`;
+        // Pass the token as a query param — more reliable than custom headers
+        // on Android where the WS upgrade handshake may strip Authorization.
+        const url = `${toWsUrl(API_URL)}/api/conversations/${conversationId}/ws?token=${encodeURIComponent(token)}`;
         const Ctor = WebSocket as unknown as RNWebSocketConstructor;
         const ws = new Ctor(url, undefined, {
           headers: { Authorization: `Bearer ${token}` },
