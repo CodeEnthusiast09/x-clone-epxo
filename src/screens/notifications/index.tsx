@@ -3,14 +3,16 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
+  Pressable,
   RefreshControl,
   Text,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import Constants from 'expo-constants';
-import { useNotifications, useMarkAllRead } from '@/hooks/services/notifications';
+import { useNotifications, useMarkAllRead, useResetUnreadCount } from '@/hooks/services/notifications';
 import { formatRelativeTime } from '@/utils/format-date';
 import type { Notification } from '@/interfaces/notification.interface';
 
@@ -41,10 +43,14 @@ function NotificationIcon({ type }: { type: Notification['type'] }) {
 
 function NotificationItem({ item }: { item: Notification }) {
   const actor = item.actor;
+  const router = useRouter();
   const initials = `${actor.firstName[0] ?? ''}${actor.lastName[0] ?? ''}`.toUpperCase();
 
   return (
-    <View className="border-b border-gray-100 bg-white">
+    <Pressable
+      className="border-b border-gray-100 bg-white active:bg-gray-50"
+      onPress={() => router.push(`/profile/${actor.username}`)}
+    >
       <View className="flex-row p-4">
         {/* Avatar with type icon overlay */}
         <View className="relative mr-3">
@@ -74,7 +80,7 @@ function NotificationItem({ item }: { item: Notification }) {
           <Text className="text-gray-400 text-xs">{formatRelativeTime(item.createdAt)}</Text>
         </View>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -103,9 +109,11 @@ export function NotificationsScreen() {
   } = useNotifications();
 
   const markAllRead = useMarkAllRead();
+  const resetUnreadCount = useResetUnreadCount();
 
   useEffect(() => {
     markAllRead.mutate();
+    resetUnreadCount();
     if (!isExpoGo) {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const Notifs = require('expo-notifications') as typeof import('expo-notifications');
