@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import { Feather } from '@expo/vector-icons';
 import { useEditProfile } from '@/hooks/services/users';
 import { useAppStore } from '@/store/auth-store';
 import { clientRequest } from '@/services/client';
@@ -115,18 +116,19 @@ export function EditProfileScreen() {
       {/* Header */}
       <View className="flex-row items-center justify-between border-b border-gray-100 px-4 py-3">
         <Pressable onPress={() => router.back()}>
-          <Text className="text-base text-gray-500">Cancel</Text>
+          <Text className="text-base text-blue-500">Cancel</Text>
         </Pressable>
-        <Text className="text-base font-bold text-black">Edit profile</Text>
+        <Text className="text-base font-bold text-gray-900">Edit Profile</Text>
         <Pressable
           onPress={() => void handleSave()}
           disabled={!isDirty || isBusy}
-          className={`rounded-full bg-black px-4 py-1.5 ${!isDirty || isBusy ? 'opacity-40' : ''}`}
         >
           {isBusy ? (
-            <ActivityIndicator size="small" color="#fff" />
+            <ActivityIndicator size="small" color="#1DA1F2" />
           ) : (
-            <Text className="text-sm font-bold text-white">Save</Text>
+            <Text className={`text-base font-semibold ${isDirty ? 'text-blue-500' : 'text-gray-300'}`}>
+              Save
+            </Text>
           )}
         </Pressable>
       </View>
@@ -148,7 +150,7 @@ export function EditProfileScreen() {
                 <Image source={{ uri: bannerUri }} className="h-full w-full" resizeMode="cover" />
               )}
               <View className="absolute inset-0 items-center justify-center bg-black/30">
-                <Text className="text-2xl">📷</Text>
+                <Feather name="camera" size={24} color="white" />
               </View>
             </View>
           </Pressable>
@@ -169,21 +171,21 @@ export function EditProfileScreen() {
                     className="h-20 w-20 rounded-full border-4 border-white bg-gray-200"
                   />
                 ) : (
-                  <View className="h-20 w-20 items-center justify-center rounded-full border-4 border-white bg-gray-300">
-                    <Text className="text-2xl font-bold text-gray-600">{initials}</Text>
+                  <View className="h-20 w-20 items-center justify-center rounded-full border-4 border-white bg-blue-500">
+                    <Text className="text-2xl font-bold text-white">{initials}</Text>
                   </View>
                 )}
                 <View className="absolute inset-0 items-center justify-center rounded-full bg-black/30">
-                  <Text className="text-xl">📷</Text>
+                  <Feather name="camera" size={18} color="white" />
                 </View>
               </View>
             </Pressable>
           </View>
 
-          {/* Text fields */}
-          <View className="px-4 pt-4">
-            <Field label="First name" value={firstName} onChangeText={setFirstName} maxLength={100} />
-            <Field label="Last name" value={lastName} onChangeText={setLastName} maxLength={100} />
+          {/* Fields */}
+          <View className="px-4 pt-6">
+            <Field label="First Name" value={firstName} onChangeText={setFirstName} maxLength={100} />
+            <Field label="Last Name" value={lastName} onChangeText={setLastName} maxLength={100} />
             <Field label="Bio" value={bio} onChangeText={setBio} maxLength={160} multiline />
             <Field label="Location" value={location} onChangeText={setLocation} maxLength={100} />
           </View>
@@ -207,12 +209,10 @@ function Field({
   multiline?: boolean;
 }) {
   return (
-    <View className="mb-5">
-      <Text className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-400">
-        {label}
-      </Text>
+    <View className="mb-6">
+      <Text className="text-xs text-gray-400 mb-1">{label}</Text>
       <TextInput
-        className={`rounded-lg border border-gray-200 px-3 py-2.5 text-sm text-black ${multiline ? 'min-h-20' : ''}`}
+        className={`text-sm text-black border-b border-gray-300 pb-2 ${multiline ? 'min-h-16' : ''}`}
         value={value}
         onChangeText={onChangeText}
         maxLength={maxLength}
@@ -220,9 +220,6 @@ function Field({
         textAlignVertical={multiline ? 'top' : 'auto'}
         placeholderTextColor="#9ca3af"
       />
-      <Text className="mt-1 text-right text-xs text-gray-400">
-        {value.length}/{maxLength}
-      </Text>
     </View>
   );
 }

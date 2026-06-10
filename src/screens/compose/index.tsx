@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import { Feather } from '@expo/vector-icons';
 import { useCreatePost } from '@/hooks/services/posts/useCreatePost';
 import { clientRequest } from '@/services/client';
 import { uploadToCloudinary } from '@/utils/cloudinary-upload';
@@ -86,7 +87,7 @@ export function ComposeScreen() {
       {/* Header */}
       <View className="flex-row items-center justify-between border-b border-gray-100 px-4 py-3">
         <Pressable onPress={() => router.back()}>
-          <Text className="text-base text-gray-500">Cancel</Text>
+          <Text className="text-base text-blue-500">Cancel</Text>
         </Pressable>
         <Pressable
           onPress={() => void handlePost()}
@@ -113,8 +114,8 @@ export function ComposeScreen() {
               className="h-10 w-10 rounded-full bg-gray-200"
             />
           ) : (
-            <View className="h-10 w-10 items-center justify-center rounded-full bg-gray-300">
-              <Text className="text-sm font-semibold text-gray-700">{initials}</Text>
+            <View className="h-10 w-10 items-center justify-center rounded-full bg-blue-500">
+              <Text className="text-sm font-semibold text-white">{initials}</Text>
             </View>
           )}
 
@@ -152,14 +153,16 @@ export function ComposeScreen() {
 
         {/* Toolbar + char counter */}
         <View className="flex-row items-center justify-between border-t border-gray-100 px-4 py-2">
-          <Pressable
-            onPress={() => void handlePickImage()}
-            disabled={isPosting}
-            hitSlop={8}
-            className="disabled:opacity-40"
-          >
-            <Text className="text-xl">🖼️</Text>
-          </Pressable>
+          <View className="flex-row items-center gap-5">
+            <Pressable
+              onPress={() => void handlePickImage()}
+              disabled={isPosting}
+              hitSlop={8}
+            >
+              <Feather name="image" size={22} color="#1DA1F2" />
+            </Pressable>
+            <Feather name="camera" size={22} color="#1DA1F2" />
+          </View>
 
           <Text
             className={`text-sm ${

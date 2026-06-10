@@ -1,19 +1,17 @@
-import { useRouter } from 'expo-router';
-import { useEffect } from 'react';
+import { ActivityIndicator, View } from 'react-native';
 import { useAppStore } from '@/store/auth-store';
 import { ProfileScreen } from '@/screens/profile';
 
 export default function ProfileTab() {
-  const router = useRouter();
   const currentUser = useAppStore((s) => s.currentUser);
 
-  useEffect(() => {
-    if (!currentUser) {
-      router.replace('/(auth)/sign-in');
-    }
-  }, [currentUser, router]);
-
-  if (!currentUser) return null;
+  if (!currentUser) {
+    return (
+      <View className="flex-1 items-center justify-center bg-white">
+        <ActivityIndicator size="large" color="#1DA1F2" />
+      </View>
+    );
+  }
 
   return <ProfileScreen username={currentUser.username} />;
 }

@@ -4,17 +4,28 @@ import {
   FlatList,
   Image,
   Pressable,
+  ScrollView,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { Feather } from '@expo/vector-icons';
 import type { Post } from '@/interfaces/post.interface';
 import type { User } from '@/interfaces/user.interface';
 import { PostCard } from '@/components/post-card';
 import { useDebounce } from '@/hooks/common/useDebounce';
 import { useSearch } from '@/hooks/services/search/useSearch';
+
+const TRENDING_TOPICS = [
+  { topic: '#ReactNative', tweets: '125K' },
+  { topic: '#TypeScript', tweets: '89K' },
+  { topic: '#WebDevelopment', tweets: '234K' },
+  { topic: '#AI', tweets: '567K' },
+  { topic: '#TechNews', tweets: '98K' },
+];
 
 type SearchTab = 'top' | 'latest' | 'people' | 'media';
 
@@ -38,22 +49,17 @@ function UserRow({ user }: { user: User }) {
       onPress={() => router.push(`/profile/${user.username}`)}
     >
       {user.profilePicture ? (
-        <Image
-          source={{ uri: user.profilePicture }}
-          className="h-10 w-10 rounded-full bg-gray-200"
-        />
+        <Image source={{ uri: user.profilePicture }} className="h-12 w-12 rounded-full bg-gray-200" />
       ) : (
-        <View className="h-10 w-10 items-center justify-center rounded-full bg-gray-300">
-          <Text className="text-sm font-semibold text-gray-700">{initials}</Text>
+        <View className="h-12 w-12 items-center justify-center rounded-full bg-blue-500">
+          <Text className="text-base font-bold text-white">{initials}</Text>
         </View>
       )}
-      <View>
-        <Text className="text-sm font-bold text-black">{displayName}</Text>
-        <Text className="text-sm text-gray-500">@{user.username}</Text>
+      <View className="flex-1">
+        <Text className="font-bold text-gray-900">{displayName}</Text>
+        <Text className="text-gray-500 text-sm">@{user.username}</Text>
         {!!user.bio && (
-          <Text className="mt-0.5 text-xs text-gray-400" numberOfLines={1}>
-            {user.bio}
-          </Text>
+          <Text className="mt-0.5 text-xs text-gray-400" numberOfLines={1}>{user.bio}</Text>
         )}
       </View>
     </Pressable>
@@ -78,7 +84,6 @@ export function SearchScreen() {
   const users = data?.users ?? [];
   const posts = data?.posts ?? [];
   const mediaPosts = posts.filter((p) => !!p.image);
-
   const hasQuery = debouncedQuery.trim().length > 0;
 
   const topData: SearchEntry[] = [
@@ -88,94 +93,98 @@ export function SearchScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      {/* Search input */}
-      <View className="px-4 pb-2 pt-3">
-        <View className="flex-row items-center gap-2 rounded-full bg-gray-100 px-4 py-2.5">
-          <Text className="text-gray-400">🔍</Text>
+      {/* Search bar */}
+      <View className="px-4 py-3 border-b border-gray-100">
+        <View className="flex-row items-center bg-gray-100 rounded-full px-4 py-3">
+          <Feather name="search" size={20} color="#657786" />
           <TextInput
-            className="flex-1 text-sm text-black"
-            placeholder="Search X"
-            placeholderTextColor="#9ca3af"
+            className="flex-1 ml-3 text-base text-black"
+            placeholder="Search Twitter"
+            placeholderTextColor="#657786"
             value={query}
             onChangeText={setQuery}
             autoCapitalize="none"
             returnKeyType="search"
           />
           {!!query && (
-            <Pressable onPress={() => setQuery('')}>
-              <Text className="text-gray-400">✕</Text>
+            <Pressable onPress={() => setQuery('')} hitSlop={8}>
+              <Feather name="x" size={18} color="#657786" />
             </Pressable>
           )}
         </View>
       </View>
 
-      {/* Tabs */}
-      {hasQuery && (
-        <View className="flex-row border-b border-gray-100">
-          {TABS.map((tab) => (
-            <Pressable
-              key={tab.key}
-              className="relative flex-1 items-center py-3"
-              onPress={() => setActiveTab(tab.key)}
-            >
-              <Text
-                className={`text-sm font-semibold ${
-                  activeTab === tab.key ? 'text-black' : 'text-gray-400'
-                }`}
-              >
-                {tab.label}
-              </Text>
-              {activeTab === tab.key && (
-                <View className="absolute bottom-0 h-1 w-8 rounded-full bg-blue-500" />
-              )}
-            </Pressable>
-          ))}
-        </View>
-      )}
-
-      {/* Results */}
+      {/* Trending (no query) */}
       {!hasQuery ? (
-        <View className="flex-1 items-center justify-center">
-          <Text className="text-base text-gray-400">Search for people or posts</Text>
-        </View>
-      ) : isLoading ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#000" />
-        </View>
-      ) : activeTab === 'top' ? (
-        <FlatList
-          data={topData}
-          keyExtractor={(entry) => entry.item.id}
-          renderItem={({ item: entry }) =>
-            entry.type === 'user' ? (
-              <UserRow user={entry.item} />
-            ) : (
-              <PostCard post={entry.item} />
-            )
-          }
-          ListEmptyComponent={<EmptyState text="No results found" />}
-        />
-      ) : activeTab === 'latest' ? (
-        <FlatList
-          data={posts}
-          keyExtractor={(p) => p.id}
-          renderItem={({ item }) => <PostCard post={item} />}
-          ListEmptyComponent={<EmptyState text="No posts found" />}
-        />
-      ) : activeTab === 'people' ? (
-        <FlatList
-          data={users}
-          keyExtractor={(u) => u.id}
-          renderItem={({ item }) => <UserRow user={item} />}
-          ListEmptyComponent={<EmptyState text="No people found" />}
-        />
+        <ScrollView className="flex-1">
+          <View className="p-4">
+            <Text className="text-xl font-bold text-gray-900 mb-4">Trending for you</Text>
+            {TRENDING_TOPICS.map((item, index) => (
+              <TouchableOpacity key={index} className="py-3 border-b border-gray-100">
+                <Text className="text-gray-500 text-sm">Trending in Technology</Text>
+                <Text className="font-bold text-gray-900 text-lg">{item.topic}</Text>
+                <Text className="text-gray-500 text-sm">{item.tweets} Tweets</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </ScrollView>
       ) : (
-        <FlatList
-          data={mediaPosts}
-          keyExtractor={(p) => p.id}
-          renderItem={({ item }) => <PostCard post={item} />}
-          ListEmptyComponent={<EmptyState text="No media posts found" />}
-        />
+        <>
+          {/* Tabs */}
+          <View className="flex-row border-b border-gray-100">
+            {TABS.map((tab) => (
+              <Pressable
+                key={tab.key}
+                className="relative flex-1 items-center py-3"
+                onPress={() => setActiveTab(tab.key)}
+              >
+                <Text className={`text-sm font-semibold ${activeTab === tab.key ? 'text-black' : 'text-gray-400'}`}>
+                  {tab.label}
+                </Text>
+                {activeTab === tab.key && (
+                  <View className="absolute bottom-0 h-1 w-8 rounded-full bg-blue-500" />
+                )}
+              </Pressable>
+            ))}
+          </View>
+
+          {/* Results */}
+          {isLoading ? (
+            <View className="flex-1 items-center justify-center">
+              <ActivityIndicator size="large" color="#1DA1F2" />
+            </View>
+          ) : activeTab === 'top' ? (
+            <FlatList
+              data={topData}
+              keyExtractor={(entry) => entry.item.id}
+              renderItem={({ item: entry }) =>
+                entry.type === 'user' ? <UserRow user={entry.item} /> : <PostCard post={entry.item} />
+              }
+              ListEmptyComponent={<EmptyState text="No results found" />}
+            />
+          ) : activeTab === 'latest' ? (
+            <FlatList
+              data={posts}
+              keyExtractor={(p) => p.id}
+              renderItem={({ item }) => <PostCard post={item} />}
+              ListEmptyComponent={<EmptyState text="No posts found" />}
+            />
+          ) : activeTab === 'people' ? (
+            <FlatList
+              data={users}
+              keyExtractor={(u) => u.id}
+              renderItem={({ item }) => <UserRow user={item} />}
+              ListEmptyComponent={<EmptyState text="No people found" />}
+            />
+          ) : (
+            <FlatList
+              data={mediaPosts}
+              keyExtractor={(p) => p.id}
+              renderItem={({ item }) => <PostCard post={item} />}
+              ListEmptyComponent={<EmptyState text="No media posts found" />}
+            />
+          )}
+        </>
       )}
     </SafeAreaView>
   );

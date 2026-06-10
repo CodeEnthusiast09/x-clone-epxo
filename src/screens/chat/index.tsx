@@ -11,11 +11,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { Feather } from '@expo/vector-icons';
 import type { Message } from '@/interfaces/conversation.interface';
 import { useConversationWS } from '@/hooks/common/useConversationWS';
 import { useMessages } from '@/hooks/services/conversations/useMessages';
 import { clientRequest } from '@/services/client';
 import { useAppStore } from '@/store/auth-store';
+import { formatRelativeTime } from '@/utils/format-date';
 
 interface Props {
   conversationId: string;
@@ -25,16 +27,17 @@ interface Props {
 
 function MessageBubble({ message, isOwn }: { message: Message; isOwn: boolean }) {
   return (
-    <View className={`mb-2 ${isOwn ? 'items-end' : 'items-start'}`}>
+    <View className={`mb-1 ${isOwn ? 'items-end' : 'items-start'}`}>
       <View
-        className={`max-w-xs rounded-2xl px-4 py-2.5 ${
-          isOwn ? 'bg-blue-500' : 'bg-gray-100'
-        }`}
+        className={`max-w-xs rounded-2xl px-4 py-3 ${isOwn ? 'bg-blue-500' : 'bg-gray-100'}`}
       >
-        <Text className={`text-sm ${isOwn ? 'text-white' : 'text-black'}`}>
+        <Text className={`text-base ${isOwn ? 'text-white' : 'text-gray-900'}`}>
           {message.body}
         </Text>
       </View>
+      <Text className="text-xs text-gray-400 mt-1 mx-1">
+        {formatRelativeTime(message.createdAt)}
+      </Text>
     </View>
   );
 }
@@ -48,26 +51,22 @@ export function ChatScreen({ conversationId, otherName, otherUsername }: Props) 
   const { data: historyMessages = [], isLoading } = useMessages(conversationId);
   const { wsMessages, sendMessage, isConnected } = useConversationWS(conversationId);
 
-  // Mark all incoming messages as read on mount
   useEffect(() => {
     void clientRequest.conversations.markRead(conversationId).catch(() => {});
   }, [conversationId]);
 
-  // Deduplicate: WS may echo a message already in history on reconnect
   const historyIds = new Set(historyMessages.map((m) => m.id));
   const allMessages = [
     ...historyMessages,
     ...wsMessages.filter((m) => !historyIds.has(m.id)),
   ];
 
-  // Scroll to bottom when history loads
   useEffect(() => {
     if (historyMessages.length > 0) {
       flatListRef.current?.scrollToEnd({ animated: false });
     }
   }, [historyMessages.length]);
 
-  // Scroll to bottom when new WS message arrives
   useEffect(() => {
     if (wsMessages.length > 0) {
       flatListRef.current?.scrollToEnd({ animated: true });
@@ -81,32 +80,39 @@ export function ChatScreen({ conversationId, otherName, otherUsername }: Props) 
     setInput('');
   };
 
+  const initials = otherName
+    .split(' ')
+    .map((w) => w[0] ?? '')
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+
   return (
     <SafeAreaView className="flex-1 bg-white">
       {/* Header */}
-      <View className="flex-row items-center gap-3 border-b border-gray-100 px-4 py-3">
-        <Pressable onPress={() => router.back()} className="p-1">
-          <Text className="text-xl text-black">←</Text>
+      <View className="flex-row items-center border-b border-gray-100 px-4 py-3">
+        <Pressable onPress={() => router.back()} className="mr-3">
+          <Feather name="arrow-left" size={24} color="#1DA1F2" />
         </Pressable>
+        <View className="h-10 w-10 items-center justify-center rounded-full bg-blue-500 mr-3">
+          <Text className="text-sm font-bold text-white">{initials}</Text>
+        </View>
         <View className="flex-1">
-          <Text className="text-base font-bold text-black">{otherName}</Text>
+          <Text className="font-semibold text-gray-900">{otherName}</Text>
           {!!otherUsername && (
-            <Text className="text-xs text-gray-500">@{otherUsername}</Text>
+            <Text className="text-gray-500 text-sm">@{otherUsername}</Text>
           )}
         </View>
-        {!isConnected && (
-          <ActivityIndicator size="small" color="#9ca3af" />
-        )}
+        {!isConnected && <ActivityIndicator size="small" color="#9ca3af" />}
       </View>
 
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={0}
       >
         {isLoading ? (
           <View className="flex-1 items-center justify-center">
-            <ActivityIndicator size="large" color="#000" />
+            <ActivityIndicator size="large" color="#1DA1F2" />
           </View>
         ) : (
           <FlatList
@@ -115,40 +121,38 @@ export function ChatScreen({ conversationId, otherName, otherUsername }: Props) 
             data={allMessages}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
-              <MessageBubble
-                message={item}
-                isOwn={item.senderId === currentUser?.id}
-              />
+              <MessageBubble message={item} isOwn={item.senderId === currentUser?.id} />
             )}
             contentContainerStyle={{ paddingVertical: 12 }}
-            ListEmptyComponent={
-              <View className="flex-1 items-center pt-12">
-                <Text className="text-sm text-gray-400">
-                  No messages yet. Say hello!
-                </Text>
-              </View>
+            ListHeaderComponent={
+              <Text className="text-center text-gray-400 text-sm mb-4">
+                This is the beginning of your conversation with {otherName}
+              </Text>
             }
+            ListEmptyComponent={null}
           />
         )}
 
         {/* Input bar */}
-        <View className="flex-row items-end gap-2 border-t border-gray-100 px-4 py-2">
-          <TextInput
-            className="flex-1 rounded-2xl border border-gray-200 px-4 py-2.5 text-sm text-black"
-            placeholder="Start a new message"
-            placeholderTextColor="#9ca3af"
-            value={input}
-            onChangeText={setInput}
-            multiline
-          />
+        <View className="flex-row items-center border-t border-gray-100 px-4 py-3">
+          <View className="flex-1 flex-row items-center bg-gray-100 rounded-full px-4 py-3 mr-3">
+            <TextInput
+              className="flex-1 text-base text-black"
+              placeholder="Start a message..."
+              placeholderTextColor="#657786"
+              value={input}
+              onChangeText={setInput}
+              multiline
+            />
+          </View>
           <Pressable
             onPress={handleSend}
             disabled={!input.trim() || !isConnected}
-            className={`h-9 w-9 items-center justify-center rounded-full bg-blue-500 ${
-              !input.trim() || !isConnected ? 'opacity-40' : ''
+            className={`h-10 w-10 items-center justify-center rounded-full ${
+              input.trim() && isConnected ? 'bg-blue-500' : 'bg-gray-300'
             }`}
           >
-            <Text className="font-bold text-white">↑</Text>
+            <Feather name="send" size={18} color="white" />
           </Pressable>
         </View>
       </KeyboardAvoidingView>

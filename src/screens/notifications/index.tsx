@@ -8,24 +8,34 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Feather } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { useNotifications, useMarkAllRead } from '@/hooks/services/notifications';
-
-const isExpoGo = Constants.appOwnership === 'expo';
 import { formatRelativeTime } from '@/utils/format-date';
 import type { Notification } from '@/interfaces/notification.interface';
 
-function notificationText(n: Notification): string {
+const isExpoGo = Constants.appOwnership === 'expo';
+
+function getNotificationText(n: Notification): string {
   const name = `${n.actor.firstName} ${n.actor.lastName}`.trim() || n.actor.username;
   switch (n.type) {
+    case 'like':    return `${name} liked your post`;
+    case 'comment': return `${name} commented on your post`;
+    case 'follow':  return `${name} started following you`;
+    default:        return `${name} interacted with you`;
+  }
+}
+
+function NotificationIcon({ type }: { type: Notification['type'] }) {
+  switch (type) {
     case 'like':
-      return `${name} liked your post`;
+      return <Feather name="heart" size={16} color="#E0245E" />;
     case 'comment':
-      return `${name} commented on your post`;
+      return <Feather name="message-circle" size={16} color="#1DA1F2" />;
     case 'follow':
-      return `${name} followed you`;
+      return <Feather name="user-plus" size={16} color="#17BF63" />;
     default:
-      return `${name} interacted with you`;
+      return <Feather name="bell" size={16} color="#657786" />;
   }
 }
 
@@ -34,37 +44,47 @@ function NotificationItem({ item }: { item: Notification }) {
   const initials = `${actor.firstName[0] ?? ''}${actor.lastName[0] ?? ''}`.toUpperCase();
 
   return (
-    <View className={`flex-row items-center gap-3 px-4 py-3 ${!item.read ? 'bg-blue-50' : 'bg-white'}`}>
-      {/* Unread dot */}
-      <View className="w-2 items-center">
-        {!item.read && <View className="h-2 w-2 rounded-full bg-blue-500" />}
-      </View>
-
-      {/* Actor avatar */}
-      {actor.profilePicture ? (
-        <Image
-          source={{ uri: actor.profilePicture }}
-          className="h-10 w-10 rounded-full bg-gray-200"
-        />
-      ) : (
-        <View className="h-10 w-10 items-center justify-center rounded-full bg-gray-300">
-          <Text className="text-sm font-semibold text-gray-700">{initials}</Text>
+    <View className="border-b border-gray-100 bg-white">
+      <View className="flex-row p-4">
+        {/* Avatar with type icon overlay */}
+        <View className="relative mr-3">
+          {actor.profilePicture ? (
+            <Image source={{ uri: actor.profilePicture }} className="h-12 w-12 rounded-full bg-gray-200" />
+          ) : (
+            <View className="h-12 w-12 items-center justify-center rounded-full bg-blue-500">
+              <Text className="text-base font-bold text-white">{initials}</Text>
+            </View>
+          )}
+          <View className="absolute -bottom-1 -right-1 h-6 w-6 items-center justify-center rounded-full bg-white border border-gray-100">
+            <NotificationIcon type={item.type} />
+          </View>
         </View>
-      )}
 
-      {/* Text + time */}
-      <View className="flex-1">
-        <Text className="text-sm text-black" numberOfLines={2}>
-          {notificationText(item)}
-        </Text>
-        <Text className="mt-0.5 text-xs text-gray-400">
-          {formatRelativeTime(item.createdAt)}
-        </Text>
+        {/* Content */}
+        <View className="flex-1">
+          <View className="flex-row items-start justify-between mb-1">
+            <View className="flex-1 mr-2">
+              <Text className="text-gray-900 text-base leading-5">
+                <Text className="font-semibold">{`${actor.firstName} ${actor.lastName}`.trim() || actor.username}</Text>
+                <Text className="text-gray-500"> @{actor.username}</Text>
+              </Text>
+              <Text className="text-gray-700 text-sm mt-0.5">{getNotificationText(item)}</Text>
+            </View>
+          </View>
+          <Text className="text-gray-400 text-xs">{formatRelativeTime(item.createdAt)}</Text>
+        </View>
       </View>
+    </View>
+  );
+}
 
-      {/* Type icon */}
-      <Text className="text-lg">
-        {item.type === 'like' ? '❤️' : item.type === 'comment' ? '💬' : '👤'}
+function NoNotificationsFound() {
+  return (
+    <View className="flex-1 items-center justify-center px-8" style={{ minHeight: 400 }}>
+      <Feather name="bell" size={80} color="#E1E8ED" />
+      <Text className="text-2xl font-semibold text-gray-500 mt-6 mb-3">No notifications yet</Text>
+      <Text className="text-gray-400 text-center text-base leading-6 max-w-xs">
+        When people like, comment, or follow you, you&apos;ll see it here.
       </Text>
     </View>
   );
@@ -96,49 +116,56 @@ export function NotificationsScreen() {
 
   const items: Notification[] = data?.pages.flatMap((p) => p.data.data ?? []) ?? [];
 
-  if (isLoading) {
-    return (
-      <SafeAreaView edges={['top']} className="flex-1 items-center justify-center bg-white">
-        <ActivityIndicator size="large" color="#000" />
-      </SafeAreaView>
-    );
-  }
-
   if (isError) {
     return (
-      <SafeAreaView edges={['top']} className="flex-1 items-center justify-center bg-white px-8">
-        <Text className="text-center text-base text-gray-500">
-          Something went wrong. Pull to refresh.
-        </Text>
+      <SafeAreaView edges={['top']} className="flex-1 bg-white">
+        <View className="flex-row items-center justify-between border-b border-gray-100 px-4 py-3">
+          <Text className="text-xl font-bold text-gray-900">Notifications</Text>
+          <Feather name="settings" size={24} color="#657786" />
+        </View>
+        <View className="flex-1 items-center justify-center px-8">
+          <Text className="text-center text-base text-gray-500">Something went wrong. Pull to refresh.</Text>
+        </View>
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-white">
-      <FlatList
-        data={items}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <NotificationItem item={item} />}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
-        onEndReached={() => {
-          if (hasNextPage && !isFetchingNextPage) fetchNextPage();
-        }}
-        onEndReachedThreshold={0.4}
-        ItemSeparatorComponent={() => <View className="h-px bg-gray-100" />}
-        ListEmptyComponent={
-          <View className="items-center px-8 pt-20">
-            <Text className="text-center text-base text-gray-400">No notifications yet.</Text>
-          </View>
-        }
-        ListFooterComponent={
-          isFetchingNextPage ? (
-            <View className="py-4">
-              <ActivityIndicator size="small" color="#000" />
-            </View>
-          ) : null
-        }
-      />
+      {/* Header */}
+      <View className="flex-row items-center justify-between border-b border-gray-100 px-4 py-3">
+        <Text className="text-xl font-bold text-gray-900">Notifications</Text>
+        <Feather name="settings" size={24} color="#657786" />
+      </View>
+
+      {isLoading ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color="#1DA1F2" />
+        </View>
+      ) : items.length === 0 ? (
+        <NoNotificationsFound />
+      ) : (
+        <FlatList
+          data={items}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => <NotificationItem item={item} />}
+          refreshControl={
+            <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#1DA1F2" />
+          }
+          onEndReached={() => {
+            if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+          }}
+          onEndReachedThreshold={0.4}
+          contentContainerStyle={{ paddingBottom: 24 }}
+          ListFooterComponent={
+            isFetchingNextPage ? (
+              <View className="py-4">
+                <ActivityIndicator size="small" color="#1DA1F2" />
+              </View>
+            ) : null
+          }
+        />
+      )}
     </SafeAreaView>
   );
 }
