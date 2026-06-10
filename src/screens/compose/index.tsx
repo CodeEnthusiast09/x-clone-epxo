@@ -6,11 +6,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   Text,
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { Feather } from '@expo/vector-icons';
@@ -23,6 +24,7 @@ const MAX_CHARS = 280;
 
 export function ComposeScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const currentUser = useAppStore((s) => s.currentUser);
   const [content, setContent] = useState('');
   const [localImageUri, setLocalImageUri] = useState<string | null>(null);
@@ -71,8 +73,9 @@ export function ComposeScreen() {
         { content: content.trim(), image: imageUrl },
         { onSuccess: () => router.back() },
       );
-    } catch {
-      Alert.alert('Upload failed', 'Could not upload image. Please try again.');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Could not upload image. Please try again.';
+      Alert.alert('Upload failed', msg);
     } finally {
       setUploading(false);
     }
@@ -83,7 +86,12 @@ export function ComposeScreen() {
     : '';
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    // KAV must be the root for the toolbar-above-keyboard pattern to work on iOS.
+    // SafeAreaView is NOT used here — insets are applied manually.
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: 'white', paddingTop: insets.top }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
       {/* Header */}
       <View className="flex-row items-center justify-between border-b border-gray-100 px-4 py-3">
         <Pressable onPress={() => router.back()}>
@@ -102,11 +110,13 @@ export function ComposeScreen() {
         </Pressable>
       </View>
 
-      <KeyboardAvoidingView
-        className="flex-1"
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      {/* Content area — scrollable so image preview doesn't push toolbar off */}
+      <ScrollView
+        className="flex-1 px-4 pt-4"
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ flexGrow: 1 }}
       >
-        <View className="flex-1 flex-row gap-3 px-4 pt-4">
+        <View className="flex-row gap-3">
           {/* Avatar */}
           {currentUser?.profilePicture ? (
             <Image
@@ -150,33 +160,36 @@ export function ComposeScreen() {
             )}
           </View>
         </View>
+      </ScrollView>
 
-        {/* Toolbar + char counter */}
-        <View className="flex-row items-center justify-between border-t border-gray-100 px-4 py-2">
-          <View className="flex-row items-center gap-5">
-            <Pressable
-              onPress={() => void handlePickImage()}
-              disabled={isPosting}
-              hitSlop={8}
-            >
-              <Feather name="image" size={22} color="#1DA1F2" />
-            </Pressable>
-            <Feather name="camera" size={22} color="#1DA1F2" />
-          </View>
-
-          <Text
-            className={`text-sm ${
-              remaining < 0
-                ? 'text-red-500'
-                : remaining <= 20
-                  ? 'text-yellow-500'
-                  : 'text-gray-400'
-            }`}
+      {/* Toolbar — docked just above keyboard */}
+      <View
+        className="flex-row items-center justify-between border-t border-gray-100 px-4 py-2"
+        style={{ paddingBottom: insets.bottom + 8 }}
+      >
+        <View className="flex-row items-center gap-5">
+          <Pressable
+            onPress={() => void handlePickImage()}
+            disabled={isPosting}
+            hitSlop={8}
           >
-            {remaining}
-          </Text>
+            <Feather name="image" size={22} color="#1DA1F2" />
+          </Pressable>
+          <Feather name="camera" size={22} color="#1DA1F2" />
         </View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+
+        <Text
+          className={`text-sm ${
+            remaining < 0
+              ? 'text-red-500'
+              : remaining <= 20
+                ? 'text-yellow-500'
+                : 'text-gray-400'
+          }`}
+        >
+          {remaining}
+        </Text>
+      </View>
+    </KeyboardAvoidingView>
   );
 }

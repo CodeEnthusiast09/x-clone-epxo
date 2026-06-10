@@ -23,6 +23,7 @@ export async function uploadToCloudinary(
   form.append('api_key', uploadParams.api_key);
   form.append('upload_preset', uploadParams.upload_preset);
   form.append('public_id', uploadParams.public_id);
+  form.append('max_bytes', String(uploadParams.max_bytes));
 
   const response = await fetch(
     `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
@@ -30,7 +31,8 @@ export async function uploadToCloudinary(
   );
 
   if (!response.ok) {
-    throw new Error(`Cloudinary upload failed: ${response.status}`);
+    const body = await response.text().catch(() => '');
+    throw new Error(`Cloudinary upload failed: ${response.status} ${body}`);
   }
 
   const json = (await response.json()) as CloudinaryUploadResponse;
