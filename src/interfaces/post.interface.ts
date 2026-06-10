@@ -7,8 +7,10 @@ export interface Post {
   content: string;
   image: string;
   likesCount: number;
+  repostsCount: number;
   commentsCount: number;
   isLikedByCurrentUser?: boolean;
+  isRepostedByCurrentUser?: boolean;
   likes?: User[];
   comments?: Comment[];
   createdAt: string;

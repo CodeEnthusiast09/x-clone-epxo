@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { AntDesign, Feather } from '@expo/vector-icons';
 import type { Post } from '@/interfaces/post.interface';
 import { useToggleLike } from '@/hooks/services/posts/useToggleLike';
+import { useToggleRepost } from '@/hooks/services/posts/useToggleRepost';
 import { useDeletePost } from '@/hooks/services/posts/useDeletePost';
 import { useAppStore } from '@/store/auth-store';
 import { CommentsModal } from '@/components/comments-modal';
@@ -37,8 +38,10 @@ export function PostCard({ post }: Props) {
   const currentUser = useAppStore((s) => s.currentUser);
   const displayName = `${post.user.firstName} ${post.user.lastName}`.trim() || post.user.username;
   const toggleLike = useToggleLike(post);
+  const toggleRepost = useToggleRepost(post);
   const deletePost = useDeletePost();
   const isLiked = !!post.isLikedByCurrentUser;
+  const isReposted = !!post.isRepostedByCurrentUser;
   const isOwn = currentUser?.id === post.userId;
   const [commentsOpen, setCommentsOpen] = useState(false);
 
@@ -96,10 +99,16 @@ export function PostCard({ post }: Props) {
               <Text className="text-gray-500 text-sm">{post.commentsCount}</Text>
             </Pressable>
 
-            <View className="flex-row items-center gap-1.5">
-              <Feather name="repeat" size={18} color="#657786" />
-              <Text className="text-gray-500 text-sm">0</Text>
-            </View>
+            <Pressable
+              className="flex-row items-center gap-1.5"
+              onPress={() => toggleRepost.mutate()}
+              disabled={toggleRepost.isPending}
+            >
+              <Feather name="repeat" size={18} color={isReposted ? '#17BF63' : '#657786'} />
+              <Text style={{ color: isReposted ? '#17BF63' : '#657786' }} className="text-sm">
+                {post.repostsCount}
+              </Text>
+            </Pressable>
 
             <Pressable
               className="flex-row items-center gap-1.5"
