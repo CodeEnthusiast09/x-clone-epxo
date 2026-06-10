@@ -2,6 +2,7 @@ import { useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Keyboard,
   Image,
   KeyboardAvoidingView,
   Modal,
@@ -67,6 +68,7 @@ export function CommentsModal({ post, visible, onClose }: Props) {
   const handleSubmit = () => {
     const trimmed = text.trim();
     if (!trimmed || createComment.isPending) return;
+    Keyboard.dismiss();
     createComment.mutate(trimmed, { onSuccess: () => setText('') });
   };
 
@@ -134,6 +136,7 @@ export function CommentsModal({ post, visible, onClose }: Props) {
             data={comments ?? []}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => <CommentItem comment={item} />}
+            keyboardShouldPersistTaps="handled"
             ListEmptyComponent={
               <View className="items-center px-8 pt-12">
                 <Text className="text-center text-sm text-gray-400">
