@@ -23,4 +23,9 @@ export const conversationsClientRequests = {
     requestGateway.patch<ApiResponse<{ markedRead: number }>>({
       url: `api/conversations/${conversationId}/read`,
     }),
+
+  delete: (conversationId: string) =>
+    requestGateway.delete<ApiResponse<null>>({
+      url: `api/conversations/${conversationId}`,
+    }),
 };

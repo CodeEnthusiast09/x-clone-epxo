@@ -49,7 +49,7 @@ export function ChatScreen({ conversationId, otherName, otherUsername }: Props) 
   const flatListRef = useRef<FlatList<Message>>(null);
 
   const { data: historyMessages = [], isLoading } = useMessages(conversationId);
-  const { wsMessages, sendMessage, isConnected } = useConversationWS(conversationId);
+  const { wsMessages, sendMessage, sendTyping, isConnected, isOtherTyping } = useConversationWS(conversationId);
 
   useEffect(() => {
     void clientRequest.conversations.markRead(conversationId).catch(() => {});
@@ -133,6 +133,15 @@ export function ChatScreen({ conversationId, otherName, otherUsername }: Props) 
           />
         )}
 
+        {/* Typing indicator */}
+        {isOtherTyping && (
+          <View className="px-4 pb-1">
+            <View className="self-start rounded-2xl bg-gray-100 px-4 py-3">
+              <Text className="text-gray-500 text-sm">{otherName} is typing…</Text>
+            </View>
+          </View>
+        )}
+
         {/* Input bar */}
         <View className="flex-row items-center border-t border-gray-100 px-4 py-3">
           <View className="flex-1 flex-row items-center bg-gray-100 rounded-full px-4 py-3 mr-3">
@@ -141,7 +150,10 @@ export function ChatScreen({ conversationId, otherName, otherUsername }: Props) 
               placeholder="Start a message..."
               placeholderTextColor="#657786"
               value={input}
-              onChangeText={setInput}
+              onChangeText={(text) => {
+                setInput(text);
+                sendTyping();
+              }}
               multiline
             />
           </View>

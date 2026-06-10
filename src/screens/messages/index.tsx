@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Image,
   Modal,
@@ -16,7 +17,10 @@ import { Feather } from '@expo/vector-icons';
 import type { ConversationView } from '@/interfaces/conversation.interface';
 import type { User } from '@/interfaces/user.interface';
 import { useConversations } from '@/hooks/services/conversations/useConversations';
+import { useDeleteConversation } from '@/hooks/services/conversations/useDeleteConversation';
 import { useStartConversation } from '@/hooks/services/conversations/useStartConversation';
+import { useDebounce } from '@/hooks/common/useDebounce';
+import { clientRequest } from '@/services/client';
 import { useAppStore } from '@/store/auth-store';
 
 function Avatar({ user }: { user: User }) {
@@ -47,10 +51,12 @@ function ConversationRow({
   item,
   currentUserId,
   onPress,
+  onLongPress,
 }: {
   item: ConversationView;
   currentUserId: string;
   onPress: () => void;
+  onLongPress: () => void;
 }) {
   const other = item.participant1Id === currentUserId ? item.participant2 : item.participant1;
   const displayName = `${other.firstName} ${other.lastName}`.trim() || other.username;
@@ -59,6 +65,8 @@ function ConversationRow({
     <Pressable
       className="flex-row items-center p-4 border-b border-gray-50 active:bg-gray-50"
       onPress={onPress}
+      onLongPress={onLongPress}
+      delayLongPress={400}
     >
       <Avatar user={other} />
       <View className="flex-1 ml-3">
@@ -92,13 +100,41 @@ export function MessagesScreen() {
   const currentUser = useAppStore((s) => s.currentUser);
   const { data: conversations = [], isLoading, refetch, isRefetching } = useConversations();
   const startConversation = useStartConversation();
+  const deleteConversation = useDeleteConversation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
   const [searchText, setSearchText] = useState('');
   const [showModal, setShowModal] = useState(false);
-  const [recipientUsername, setRecipientUsername] = useState('');
+  const [recipientQuery, setRecipientQuery] = useState('');
   const [startError, setStartError] = useState('');
+  const [suggestions, setSuggestions] = useState<User[]>([]);
+  const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
+
+  const debouncedQuery = useDebounce(recipientQuery, 300);
+
+  // Fetch suggestions whenever the debounced query changes.
+  const fetchSuggestions = useCallback(async (q: string) => {
+    const trimmed = q.trim().replace(/^@/, '');
+    if (!trimmed) {
+      setSuggestions([]);
+      return;
+    }
+    setIsFetchingSuggestions(true);
+    try {
+      const res = await clientRequest.search.search(trimmed, 8);
+      setSuggestions(res.data.data?.users ?? []);
+    } catch {
+      setSuggestions([]);
+    } finally {
+      setIsFetchingSuggestions(false);
+    }
+  }, []);
+
+  // Trigger fetch when debounced query changes.
+  useEffect(() => {
+    void fetchSuggestions(debouncedQuery);
+  }, [debouncedQuery, fetchSuggestions]);
 
   if (!currentUser) return null;
 
@@ -119,14 +155,47 @@ export function MessagesScreen() {
     router.push(`/chat/${conv.id}?name=${encodeURIComponent(name)}&username=${encodeURIComponent(other.username)}`);
   };
 
+  const handleLongPress = (conv: ConversationView) => {
+    const other = conv.participant1Id === currentUser.id ? conv.participant2 : conv.participant1;
+    const name = `${other.firstName} ${other.lastName}`.trim() || other.username;
+    Alert.alert(
+      'Delete conversation',
+      `Delete your conversation with ${name}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => deleteConversation.mutate(conv.id),
+        },
+      ],
+    );
+  };
+
+  const handleSelectSuggestion = (user: User) => {
+    setStartError('');
+    startConversation.mutate(user.username, {
+      onSuccess: (conv) => {
+        setShowModal(false);
+        setRecipientQuery('');
+        setSuggestions([]);
+        const other = conv.participant1Id === currentUser.id ? conv.participant2 : conv.participant1;
+        const name = `${other.firstName} ${other.lastName}`.trim() || other.username;
+        router.push(`/chat/${conv.id}?name=${encodeURIComponent(name)}&username=${encodeURIComponent(other.username)}`);
+      },
+      onError: (e) => setStartError(e instanceof Error ? e.message : 'Something went wrong'),
+    });
+  };
+
   const handleStartChat = () => {
-    const raw = recipientUsername.trim().replace(/^@/, '');
+    const raw = recipientQuery.trim().replace(/^@/, '');
     if (!raw) return;
     setStartError('');
     startConversation.mutate(raw, {
       onSuccess: (conv) => {
         setShowModal(false);
-        setRecipientUsername('');
+        setRecipientQuery('');
+        setSuggestions([]);
         const other = conv.participant1Id === currentUser.id ? conv.participant2 : conv.participant1;
         const name = `${other.firstName} ${other.lastName}`.trim() || other.username;
         router.push(`/chat/${conv.id}?name=${encodeURIComponent(name)}&username=${encodeURIComponent(other.username)}`);
@@ -137,7 +206,8 @@ export function MessagesScreen() {
 
   const handleCloseModal = () => {
     setShowModal(false);
-    setRecipientUsername('');
+    setRecipientQuery('');
+    setSuggestions([]);
     setStartError('');
   };
 
@@ -179,6 +249,7 @@ export function MessagesScreen() {
               item={item}
               currentUserId={currentUser.id}
               onPress={() => handleConversationPress(item)}
+              onLongPress={() => handleLongPress(item)}
             />
           )}
           refreshControl={
@@ -208,26 +279,69 @@ export function MessagesScreen() {
             <Text className="text-base font-bold text-black">New message</Text>
             <Pressable
               onPress={handleStartChat}
-              disabled={!recipientUsername.trim() || startConversation.isPending}
-              className={`rounded-full bg-black px-4 py-1.5 ${!recipientUsername.trim() || startConversation.isPending ? 'opacity-40' : ''}`}
+              disabled={!recipientQuery.trim() || startConversation.isPending}
+              className={`rounded-full bg-black px-4 py-1.5 ${!recipientQuery.trim() || startConversation.isPending ? 'opacity-40' : ''}`}
             >
               <Text className="text-sm font-bold text-white">
                 {startConversation.isPending ? '...' : 'Next'}
               </Text>
             </Pressable>
           </View>
-          <View className="px-4 pt-4">
+
+          {/* Search input */}
+          <View className="flex-row items-center border-b border-gray-100 px-4 py-3">
+            <Feather name="search" size={18} color="#657786" />
             <TextInput
-              className="rounded-xl border border-gray-200 px-4 py-3 text-sm text-black"
-              placeholder="@username"
+              className="flex-1 ml-3 text-base text-black"
+              placeholder="Search people"
               placeholderTextColor="#9ca3af"
-              value={recipientUsername}
-              onChangeText={(t) => { setRecipientUsername(t); setStartError(''); }}
+              value={recipientQuery}
+              onChangeText={(t) => { setRecipientQuery(t); setStartError(''); }}
               autoCapitalize="none"
               autoFocus
             />
-            {!!startError && <Text className="mt-2 text-sm text-red-500">{startError}</Text>}
+            {isFetchingSuggestions && <ActivityIndicator size="small" color="#1DA1F2" />}
           </View>
+
+          {!!startError && (
+            <Text className="mx-4 mt-2 text-sm text-red-500">{startError}</Text>
+          )}
+
+          {/* Suggestion list */}
+          <FlatList
+            data={suggestions}
+            keyExtractor={(u) => u.id}
+            keyboardShouldPersistTaps="handled"
+            renderItem={({ item: user }) => {
+              const name = `${user.firstName} ${user.lastName}`.trim() || user.username;
+              const initials = `${user.firstName[0] ?? ''}${user.lastName[0] ?? ''}`.toUpperCase();
+              return (
+                <Pressable
+                  className="flex-row items-center px-4 py-3 border-b border-gray-50 active:bg-gray-50"
+                  onPress={() => handleSelectSuggestion(user)}
+                >
+                  {user.profilePicture ? (
+                    <Image source={{ uri: user.profilePicture }} className="h-10 w-10 rounded-full bg-gray-200 mr-3" />
+                  ) : (
+                    <View className="h-10 w-10 items-center justify-center rounded-full bg-blue-500 mr-3">
+                      <Text className="text-sm font-bold text-white">{initials}</Text>
+                    </View>
+                  )}
+                  <View>
+                    <Text className="font-semibold text-gray-900">{name}</Text>
+                    <Text className="text-gray-500 text-sm">@{user.username}</Text>
+                  </View>
+                </Pressable>
+              );
+            }}
+            ListEmptyComponent={
+              recipientQuery.trim() && !isFetchingSuggestions ? (
+                <View className="items-center pt-8">
+                  <Text className="text-gray-400 text-sm">No users found</Text>
+                </View>
+              ) : null
+            }
+          />
         </SafeAreaView>
       </Modal>
     </SafeAreaView>
