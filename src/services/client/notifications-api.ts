@@ -10,6 +10,9 @@ export const notificationsClientRequests = {
       url: `api/notifications?page=${page}&limit=${limit}`,
     }),
 
+  unreadCount: () =>
+    requestGateway.get<ApiResponse<{ count: number }>>({ url: 'api/notifications/unread-count' }),
+
   markAllRead: () =>
     requestGateway.patch<ApiResponse<null>>({ url: 'api/notifications/read', payload: {} }),
 

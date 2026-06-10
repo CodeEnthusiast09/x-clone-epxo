@@ -1,5 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
+import { useAuth } from '@clerk/clerk-expo';
+import { useUnreadCount } from '@/hooks/services/notifications';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -14,6 +16,9 @@ function TabIcon({
 }
 
 export default function TabsLayout() {
+  const { isSignedIn } = useAuth();
+  const { data: unreadCount = 0 } = useUnreadCount(!!isSignedIn);
+
   return (
     <Tabs
       screenOptions={{
@@ -49,6 +54,7 @@ export default function TabsLayout() {
               focused={focused}
             />
           ),
+          tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
         }}
       />
       <Tabs.Screen
